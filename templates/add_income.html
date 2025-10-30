@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Income | Finance Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+<body>
+    <h2>Add Income</h2>
+    <form method="POST">
+        <label>Amount:</label><br>
+        <input type="number" name="amount" required><br><br>
+        <label>Source:</label><br>
+        <input type="text" name="source" required><br><br>
+        <label>Date:</label><br>
+        <input type="date" name="date" required><br><br>
+        <button type="submit">Add Income</button>
+    </form>
+    <br>
+    <a href="/dashboard">⬅ Back to Dashboard</a>
+</body>
+</html>

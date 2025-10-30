@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Expense</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h2>Add Expense</h2>
+    <form action="/add_expense" method="POST">
+        <label>Category:</label>
+        <input type="text" name="category" required><br><br>
+        <label>Amount:</label>
+        <input type="number" name="amount" required><br><br>
+        <label>Date:</label>
+        <input type="date" name="date" required><br><br>
+        <button type="submit">Add Expense</button>
+    </form>
+
+    <br><a href="/dashboard">← Back to Dashboard</a>
+</body>
+</html>

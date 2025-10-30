@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard | Finance Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #f3f6fa;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 60px auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0px 4px 15px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 25px;
+        }
+
+        .summary-box {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            background: #eef3ff;
+            padding: 15px;
+            border-radius: 10px;
+            width: 30%;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+
+        .card p {
+            margin: 8px 0;
+            font-size: 16px;
+        }
+
+        .links a {
+            text-decoration: none;
+            margin: 0 10px;
+            padding: 10px 15px;
+            background: #007bff;
+            color: #fff;
+            border-radius: 6px;
+            transition: 0.3s;
+        }
+
+        .links a:hover {
+            background: #0056b3;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 25px;
+            background: #fafafa;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0px 2px 6px rgba(0,0,0,0.05);
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #007bff;
+            color: #fff;
+            text-align: left;
+        }
+
+        tr:nth-child(even) {
+            background: #f2f6ff;
+        }
+
+        h3 {
+            margin-top: 30px;
+            color: #2c3e50;
+        }
+
+        .empty {
+            text-align: center;
+            color: #777;
+            padding: 10px 0;
+        }
+
+        #chartContainer {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 40px;
+        }
+
+        canvas {
+            max-width: 320px;
+            margin: 0 auto;
+        }
+
+        .date-filter {
+            margin-bottom: 20px;
+        }
+
+        .date-filter input, .date-filter button {
+            padding: 6px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+
+        .date-filter button {
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .date-filter button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Welcome, {{ name }}</h2>
+
+        <div class="summary-box">
+            <div class="card">
+                <p><b>Total Income</b></p>
+                <p>₹{{ total_income }}</p>
+            </div>
+            <div class="card">
+                <p><b>Total Expense</b></p>
+                <p>₹{{ total_expense }}</p>
+            </div>
+            <div class="card">
+                <p><b>Balance</b></p>
+                <p>₹{{ balance }}</p>
+            </div>
+        </div>
+
+        <form method="GET" action="/dashboard" class="date-filter">
+            <label for="start_date"><b>From:</b></label>
+            <input type="date" name="start_date" id="start_date" required>
+
+            <label for="end_date"><b>To:</b></label>
+            <input type="date" name="end_date" id="end_date" required>
+
+            <button type="submit">Filter</button>
+        </form>
+
+        <div class="links">
+            <a href="/add_income">➕ Add Income</a>
+            <a href="/add_expense">➖ Add Expense</a>
+            <a href="/logout">🚪 Logout</a>
+        </div>
+
+        <div id="chartContainer">
+            <div>
+                <h3>📊 Income vs Expense</h3>
+                <canvas id="overviewChart" width="300" height="300"></canvas>
+            </div>
+            <div>
+                <h3>💸 Expense by Category</h3>
+                <canvas id="categoryChart" width="300" height="300"></canvas>
+            </div>
+        </div>
+
+        <h3>💰 Recent Incomes</h3>
+        <table>
+            <tr>
+                <th>Date</th>
+                <th>Source</th>
+                <th>Amount (₹)</th>
+            </tr>
+            {% for inc in incomes %}
+            <tr>
+                <td>{{ inc.date }}</td>
+                <td>{{ inc.source }}</td>
+                <td>{{ inc.amount }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="empty">No incomes added yet.</td></tr>
+            {% endfor %}
+        </table>
+
+        <h3>💸 Recent Expenses</h3>
+        <table>
+            <tr>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Amount (₹)</th>
+            </tr>
+            {% for exp in expenses %}
+            <tr>
+                <td>{{ exp.date }}</td>
+                <td>{{ exp.category }}</td>
+                <td>{{ exp.amount }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="empty">No expenses added yet.</td></tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const totalIncome = JSON.parse('{{ total_income | tojson | safe }}');
+        const totalExpense = JSON.parse('{{ total_expense | tojson | safe }}');
+        const categories = JSON.parse('{{ categories | tojson | safe }}');
+        const amounts = JSON.parse('{{ amounts | tojson | safe }}');
+
+        const ctx1 = document.getElementById('overviewChart').getContext('2d');
+        new Chart(ctx1, {
+            type: 'doughnut',
+            data: {
+                labels: ['Income', 'Expense'],
+                datasets: [{
+                    data: [totalIncome, totalExpense],
+                    backgroundColor: ['#10b981', '#ef4444'],
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { position: 'bottom' },
+                    title: {
+                        display: true,
+                        text: 'Income vs Expense Overview'
+                    }
+                }
+            }
+        });
+
+        const ctx2 = document.getElementById('categoryChart').getContext('2d');
+        new Chart(ctx2, {
+            type: 'pie',
+            data: {
+                labels: categories,
+                datasets: [{
+                    data: amounts,
+                    backgroundColor: [
+                        '#f87171', '#facc15', '#34d399', '#60a5fa',
+                        '#a78bfa', '#f472b6', '#fbbf24', '#4ade80'
+                    ],
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { position: 'bottom' },
+                    title: {
+                        display: true,
+                        text: 'Expenses by Category'
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
